@@ -1,0 +1,7 @@
+{
+  "css.validate": false,
+  "scss.validate": false,
+  "less.validate": false,
+  "tailwindCSS.validate": false,
+  "git.ignoreLimitWarning": true
+}

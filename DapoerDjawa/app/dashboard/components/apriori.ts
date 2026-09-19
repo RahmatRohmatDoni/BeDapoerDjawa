@@ -1,6 +1,6 @@
 "use server";
 
-import { createClient } from "../../lib/server";
+import { createClient } from "@/lib/server";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 
 export async function generateAprioriRules(minSupport = 0.05, minConfidence = 0.3) {

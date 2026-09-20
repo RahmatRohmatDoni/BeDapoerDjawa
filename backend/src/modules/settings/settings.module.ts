@@ -9,3 +9,4 @@ import { SupabaseModule } from '../../config/supabase.config';
   providers: [SettingsService],
 })
 export class SettingsModule {}
+

@@ -51,3 +51,4 @@ export class SettingsController {
     return this.settingsService.deletePromo(id);
   }
 }
+

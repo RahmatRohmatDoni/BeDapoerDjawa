@@ -99,6 +99,12 @@ export class PaymentService {
       throw new BadRequestException('Payload tidak lengkap');
     }
 
+    // Handle test notification dari Midtrans (order_id dimulai dengan 'payment_notif_test_')
+    if (String(order_id).startsWith('payment_notif_test_')) {
+      this.logger.log(`Midtrans test notification received: ${order_id}`);
+      return { success: true, message: 'Test notification acknowledged', order_id };
+    }
+
     // Verifikasi SHA-512 signature
     const signatureString = `${order_id}${status_code}${gross_amount}${serverKey}`;
     const expectedSignature = crypto.createHash('sha512').update(signatureString).digest('hex');

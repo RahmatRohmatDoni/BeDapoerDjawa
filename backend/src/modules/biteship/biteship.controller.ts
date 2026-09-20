@@ -1,4 +1,5 @@
 import { Controller, Post, Get, Body, UseGuards, HttpCode, HttpStatus, Headers, ForbiddenException } from '@nestjs/common';
+import { SkipThrottle } from '@nestjs/throttler';
 import { ConfigService } from '@nestjs/config';
 import { BiteshipService } from './biteship.service';
 import { CreateBiteshipOrderDto } from './dto/create-order.dto';
@@ -27,6 +28,7 @@ export class BiteshipController {
   }
 
   @Post('webhook')
+  @SkipThrottle()
   @HttpCode(HttpStatus.OK)
   async handleWebhook(
     @Body() body: Record<string, any>,
@@ -42,6 +44,7 @@ export class BiteshipController {
   }
 
   @Get('webhook')
+  @SkipThrottle()
   webhookHealthCheck() {
     return { success: true, message: 'Biteship webhook endpoint aktif' };
   }

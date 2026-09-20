@@ -1,4 +1,5 @@
 import { Controller, Post, Get, Body, HttpCode, HttpStatus, UseGuards } from '@nestjs/common';
+import { SkipThrottle } from '@nestjs/throttler';
 import { PaymentService } from './payment.service';
 import { TokenizeDto } from './dto/tokenize.dto';
 import { AuthGuard } from '../../common/guards/auth.guard';
@@ -15,12 +16,14 @@ export class PaymentController {
   }
 
   @Post('webhook')
+  @SkipThrottle()
   @HttpCode(HttpStatus.OK)
   async handleWebhook(@Body() body: Record<string, unknown>) {
     return this.paymentService.handleWebhook(body);
   }
 
   @Get('webhook')
+  @SkipThrottle()
   webhookHealthCheck() {
     return { success: true, message: 'Midtrans webhook endpoint aktif' };
   }

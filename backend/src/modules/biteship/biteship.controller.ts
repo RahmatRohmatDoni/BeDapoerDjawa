@@ -1,4 +1,4 @@
-import { Controller, Post, Body, UseGuards, HttpCode, HttpStatus, Headers, ForbiddenException } from '@nestjs/common';
+import { Controller, Post, Get, Body, UseGuards, HttpCode, HttpStatus, Headers, ForbiddenException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { BiteshipService } from './biteship.service';
 import { CreateBiteshipOrderDto } from './dto/create-order.dto';
@@ -39,5 +39,10 @@ export class BiteshipController {
       }
     }
     return this.biteshipService.handleWebhook(body);
+  }
+
+  @Get('webhook')
+  webhookHealthCheck() {
+    return { success: true, message: 'Biteship webhook endpoint aktif' };
   }
 }

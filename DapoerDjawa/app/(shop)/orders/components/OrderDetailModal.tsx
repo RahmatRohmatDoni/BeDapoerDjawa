@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ImageIcon, MapPin, Truck, Loader2, Clock, CreditCard } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { supabase } from "@/lib/supabase";
 import type { Order, TrackingHistory } from "./HistoryClient";
 
 type OrderDetailModalProps = { order: Order | null; open: boolean; onOpenChange: (open: boolean) => void; };
@@ -24,8 +25,13 @@ export default function OrderDetailModal({ order, open, onOpenChange }: OrderDet
     setIsTracking(true); setTrackingError(null);
 
     try {
+      const { data: { session } } = await supabase.auth.getSession();
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/biteship/tracking`, {
-        method: "POST", headers: { "Content-Type": "application/json" },
+        method: "POST", 
+        headers: { 
+          "Content-Type": "application/json",
+          ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {})
+        },
         body: JSON.stringify({ resi: order.tracking_number, courier: order.shipping_courier || "jne" }),
       });
       const result = await res.json();

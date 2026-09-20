@@ -2,15 +2,6 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   // =========================================================
-  // NGROK DEVELOPMENT
-  // =========================================================
-  // Mengizinkan Next.js development server diakses
-  // melalui domain Ngrok.
-  allowedDevOrigins: [
-    "tribune-cradle-hash.ngrok-free.dev",
-  ],
-
-  // =========================================================
   // IMAGE CONFIGURATION
   // =========================================================
   images: {
@@ -37,8 +28,16 @@ const nextConfig: NextConfig = {
           {
             key: "Content-Security-Policy",
             value:
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://app.sandbox.midtrans.com https://snap-assets.sandbox.midtrans.com https://*.google.com;",
+              "default-src 'self'; script-src 'self' 'unsafe-inline' https://app.sandbox.midtrans.com https://snap-assets.sandbox.midtrans.com https://*.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https: wss:; frame-src 'self' https://app.sandbox.midtrans.com;",
           },
+          {
+            key: "X-Content-Type-Options",
+            value: "nosniff",
+          },
+          {
+            key: "X-Frame-Options",
+            value: "DENY",
+          }
         ],
       },
     ];

@@ -30,5 +30,10 @@ export class AdminController {
 
     return this.adminService.inviteAdmin(email, namaUser, noHp, alamat, frontendUrl);
   }
+
+  @Patch(':id/role')
+  async changeRole(@Param('id') userId: string, @Body('role') role: string) {
+    return this.adminService.changeUserRole(userId, role);
+  }
 }
 

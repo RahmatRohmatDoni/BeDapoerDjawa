@@ -72,11 +72,16 @@ export default function CheckoutClient() {
   const { data: orderData, isLoading: isOrderLoading, isError } = useQuery({
     queryKey: ["draftOrder", orderId],
     queryFn: async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) throw new Error("Unauthenticated");
+
       const { data, error } = await supabase
         .from("orders")
         .select(`*, order_items (*, produk_varian (berat, tinggi, diameter))`)
         .eq("id", orderId)
+        .eq("user_id", session.user.id) // PROTEKSI IDOR (V-005)
         .single();
+      
       if (error) throw new Error(error.message);
       return data;
     },
@@ -158,33 +163,38 @@ export default function CheckoutClient() {
   // MUTATION: Proses Submit Form & Checkout Midtrans
   const paymentMutation = useMutation({
     mutationFn: async (formData: CheckoutFormValues) => {
-      if (!orderData || !orderId) throw new Error("Data pesanan tidak ditemukan.");
-      const grandTotal = (orderData.subtotal || 0) - (orderData.discount || 0) + formData.courierPrice;
-
-      // Update tabel orders
-      const { error: updateError } = await supabase
-        .from("orders")
-        .update({
-          customer_name: formData.name, customer_phone: formData.phone, shipping_address: formData.street,
-          shipping_city: formData.destinationLabel, shipping_postal_code: formData.postalCode, 
-          shipping_courier: formData.courierName, shipping_cost: formData.courierPrice, grand_total: grandTotal,
-          customer_note: formData.customerNote, status: "pending", 
-          total_weight: totalWeight, total_length: totalLength, total_width: totalWidth, total_height: totalHeight
+      // Menggunakan endpoint backend untuk finalisasi order dan mencegah client-side manipulation
+      const { data: { session: tokenSession } } = await supabase.auth.getSession();
+      const accessToken = tokenSession?.access_token;
+      
+      const finalizeRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/orders/${orderId}/finalize`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {})
+        },
+        body: JSON.stringify({
+          customerName: formData.name,
+          customerPhone: formData.phone,
+          shippingAddress: formData.street,
+          shippingCity: formData.destinationLabel,
+          shippingPostalCode: formData.postalCode,
+          shippingCourier: formData.courierName,
+          shippingCost: formData.courierPrice,
+          customerNote: formData.customerNote,
+          totalWeight,
+          totalLength,
+          totalWidth,
+          totalHeight
         })
-        .eq("id", orderId);
-      if (updateError) throw updateError;
+      });
 
-      // Ambil ID user dari session (Server-side) agar aman
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user?.id) {
-        await supabase
-          .from("users")
-          .update({ nama_user: formData.name, no_hp: formData.phone, alamat: formData.street })
-          .eq("id_user", session.user.id);
+      if (!finalizeRes.ok) {
+        const finalizeErr = await finalizeRes.json();
+        throw new Error(finalizeErr.error || finalizeErr.message || "Gagal memproses pesanan di server.");
       }
 
-      // API Midtrans - Warning: Pastikan API ini memvalidasi ulang harga (grandTotal) di backend
-      const { data: { session: tokenSession } } = await supabase.auth.getSession();
+      // API Midtrans - Sekarang aman karena server sudah update grandTotal di backend
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/payment/tokenize`, {
         method: "POST", headers: { "Content-Type": "application/json", ...(tokenSession?.access_token ? { Authorization: `Bearer ${tokenSession.access_token}` } : {}) },
         body: JSON.stringify({

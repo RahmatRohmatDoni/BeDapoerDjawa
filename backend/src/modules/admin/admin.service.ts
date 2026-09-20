@@ -92,5 +92,23 @@ export class AdminService {
       redirectTo: inviteRedirectUrl,
     };
   }
+
+  async changeUserRole(userId: string, newRole: string) {
+    const validRoles = ['admin', 'user']; // Cannot set to owner via this api
+    if (!validRoles.includes(newRole)) {
+      throw new ConflictException('Role tidak valid.');
+    }
+
+    const { data, error } = await this.supabaseService.adminClient
+      .from('users')
+      .update({ role: newRole })
+      .eq('id_user', userId)
+      .eq('role', 'admin') // Only allow changing from admin (prevents changing owner)
+      .select('id_user, role')
+      .single();
+
+    if (error) throw new ConflictException(`Gagal mengubah role: ${error.message}`);
+    return { success: true, user: data };
+  }
 }
 

@@ -1,0 +1,6 @@
+# Sensitive files - NEVER commit
+Penting/
+*.env
+*.env.*
+!*.env.example
+

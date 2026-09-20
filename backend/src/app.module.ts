@@ -9,6 +9,7 @@ import { ShippingModule } from './modules/shipping/shipping.module';
 import { PaymentModule } from './modules/payment/payment.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { OrdersModule } from './modules/orders/orders.module';
+import { SettingsModule } from './modules/settings/settings.module';
 
 @Module({
   imports: [

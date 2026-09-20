@@ -147,4 +147,68 @@ export class OrdersService {
 
     return { success: true, order_id: orderData.id };
   }
+
+  async finalizeOrder(orderId: string, userId: string, payload: any) {
+    const supabase = this.supabaseService.adminClient;
+
+    // 1. Fetch order and verify ownership
+    const { data: order, error } = await supabase
+      .from('orders')
+      .select('*')
+      .eq('id', orderId)
+      .single();
+
+    if (error || !order) throw new BadRequestException('Pesanan tidak ditemukan');
+    if (order.user_id !== userId) throw new BadRequestException('Akses ditolak (Bukan pesanan Anda)');
+    if (order.status !== 'draft') throw new BadRequestException('Pesanan sudah diproses');
+
+    // 2. Validate shipping cost
+    const shippingCost = Number(payload.shippingCost) || 0;
+    if (shippingCost < 0) throw new BadRequestException('Biaya pengiriman tidak valid');
+
+    // 3. Calculate grand total securely on server
+    const subtotal = Number(order.subtotal || 0);
+    const discount = Number(order.discount || 0);
+    const grandTotal = Math.max(0, subtotal - discount + shippingCost);
+
+    // 4. Update order with secure values
+    const { data: updatedOrder, error: updateError } = await supabase
+      .from('orders')
+      .update({
+        customer_name: payload.customerName,
+        customer_phone: payload.customerPhone,
+        shipping_address: payload.shippingAddress,
+        shipping_city: payload.shippingCity,
+        shipping_postal_code: payload.shippingPostalCode,
+        shipping_courier: payload.shippingCourier,
+        shipping_cost: shippingCost,
+        grand_total: grandTotal,
+        customer_note: payload.customerNote,
+        status: 'pending',
+        total_weight: payload.totalWeight,
+        total_length: payload.totalLength,
+        total_width: payload.totalWidth,
+        total_height: payload.totalHeight
+      })
+      .eq('id', orderId)
+      .select()
+      .single();
+
+    if (updateError) {
+      this.logger.error('Failed to update order finalization', updateError);
+      throw new BadRequestException('Gagal menyimpan detail pengiriman');
+    }
+
+    // 5. Update user profile information synchronously
+    await supabase
+      .from('users')
+      .update({
+        nama_user: payload.customerName,
+        no_hp: payload.customerPhone,
+        alamat: payload.shippingAddress
+      })
+      .eq('id_user', userId);
+
+    return { success: true, order: updatedOrder };
+  }
 }

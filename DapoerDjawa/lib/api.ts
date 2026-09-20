@@ -14,6 +14,10 @@ async function getAccessToken(): Promise<string | null> {
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     );
+    const { data: { user }, error } = await supabase.auth.getUser();
+    if (error || !user) return null;
+    
+    // We still need the session for the access_token, but we validate user first
     const { data: { session } } = await supabase.auth.getSession();
     return session?.access_token || null;
   } catch {

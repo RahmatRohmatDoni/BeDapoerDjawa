@@ -304,6 +304,7 @@ export default function SettingsTab() {
         const fileExt = bannerFile.name.split(".").pop();
         const fileName = `banner-${new Date().getTime()}.${fileExt}`;
 
+        // Uploading ke Supabase Storage (bisa dari client karena public bucket)
         const { error: uploadError } = await supabase.storage
           .from("banners")
           .upload(fileName, bannerFile);
@@ -327,20 +328,27 @@ export default function SettingsTab() {
         is_active: bannerForm.is_active,
       };
 
-      if (editingItem && "id" in editingItem && editingItem.id) {
-        const { error } = await supabase
-          .from("hero_banners")
-          .update(payload)
-          .eq("id", editingItem.id);
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
 
-        if (error) throw error;
+      if (editingItem && "id" in editingItem && editingItem.id) {
+        // Panggil backend API
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/settings/banners/${editingItem.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+          body: JSON.stringify(payload)
+        });
+        if (!res.ok) throw new Error("Gagal update banner");
         toast.success("Banner berhasil diperbarui!");
       } else {
         if (!finalImageUrl) throw new Error("Gambar banner wajib diisi!");
-
-        const { error } = await supabase.from("hero_banners").insert([payload]);
-
-        if (error) throw error;
+        // Panggil backend API
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/settings/banners`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+          body: JSON.stringify(payload)
+        });
+        if (!res.ok) throw new Error("Gagal menyimpan banner");
         toast.success("Banner baru berhasil ditambahkan!");
       }
 
@@ -365,31 +373,22 @@ export default function SettingsTab() {
     try {
       const bannerToDelete = banners.find((b) => b.id === id);
 
+      // Clean up storage (Client allowed for public bucket if config allows, or ignore error)
       if (bannerToDelete && bannerToDelete.image_url) {
         const fileName = bannerToDelete.image_url.split("/").pop();
         if (fileName) {
-          const { error: storageError } = await supabase.storage
-            .from("banners")
-            .remove([fileName]);
-
-          if (storageError) {
-            console.error(
-              "Gagal menghapus gambar dari storage:",
-              storageError
-            );
-          }
+          await supabase.storage.from("banners").remove([fileName]);
         }
       }
 
-      const { error: dbError } = await supabase
-        .from("hero_banners")
-        .delete()
-        .eq("id", id);
-
-      if (dbError) {
-        toast.error(`Gagal menghapus banner: ${dbError.message}`);
-        return;
-      }
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/settings/banners/${id}`, {
+        method: 'DELETE',
+        headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) }
+      });
+      if (!res.ok) throw new Error("Gagal menghapus banner dari backend");
 
       toast.success("Banner berhasil dihapus!");
       await fetchData();
@@ -430,23 +429,33 @@ export default function SettingsTab() {
     };
 
     try {
-      if (editingItem && "id" in editingItem && editingItem.id) {
-        const { error } = await supabase
-          .from("promo_codes")
-          .update(payload)
-          .eq("id", editingItem.id);
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
 
-        if (error) {
-          toast.error(`Gagal update promo: ${error.message}`);
+      if (editingItem && "id" in editingItem && editingItem.id) {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/settings/promos/${editingItem.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+          body: JSON.stringify(payload)
+        });
+
+        if (!res.ok) {
+          const err = await res.json();
+          toast.error(`Gagal update promo: ${err.message || res.status}`);
           return;
         }
 
         toast.success("Kode promo berhasil diperbarui!");
       } else {
-        const { error } = await supabase.from("promo_codes").insert([payload]);
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/settings/promos`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+          body: JSON.stringify(payload)
+        });
 
-        if (error) {
-          toast.error(`Gagal menambahkan promo: ${error.message}`);
+        if (!res.ok) {
+          const err = await res.json();
+          toast.error(`Gagal menambahkan promo: ${err.message || res.status}`);
           return;
         }
 
@@ -466,13 +475,17 @@ export default function SettingsTab() {
 
   const executeDeletePromo = async (id: string) => {
     try {
-      const { error } = await supabase
-        .from("promo_codes")
-        .delete()
-        .eq("id", id);
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
 
-      if (error) {
-        toast.error(`Gagal menghapus promo: ${error.message}`);
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/settings/promos/${id}`, {
+        method: 'DELETE',
+        headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) }
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        toast.error(`Gagal menghapus promo: ${err.message || res.status}`);
         return;
       }
 
@@ -594,14 +607,21 @@ export default function SettingsTab() {
 
   const executeDemoteAdmin = async (id: string) => {
     try {
-      const { error } = await supabase
-        .from("users")
-        .update({ role: "user" })
-        .eq("id_user", id)
-        .eq("role", "admin");
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
 
-      if (error) {
-        toast.error(`Gagal mengubah role admin: ${error.message}`);
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/users/${id}/role`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({ role: 'user' })
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        toast.error(`Gagal mengubah role admin: ${err.message || res.status}`);
         return;
       }
 

@@ -1,8 +1,10 @@
-import { Controller, Post, Get, Body, Query } from '@nestjs/common';
+import { Controller, Post, Get, Body, Query, UseGuards } from '@nestjs/common';
 import { ShippingService } from './shipping.service';
 import { RatesDto } from './dto/rates.dto';
+import { AuthGuard } from '../../common/guards/auth.guard';
 
 @Controller('shipping')
+@UseGuards(AuthGuard)
 export class ShippingController {
   constructor(private shippingService: ShippingService) {}
 

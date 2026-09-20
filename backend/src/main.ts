@@ -35,10 +35,10 @@ async function bootstrap() {
   // Global exception filter
   app.useGlobalFilters(new HttpExceptionFilter());
 
-  const port = configService.get<number>('PORT', 3001);
+  // PERBAIKAN TYPESCRIPT: Menetapkan tipe secara eksplisit menjadi string atau number
+  const port: string | number = process.env.PORT || configService.get<number>('PORT') || 3001;
   await app.listen(port);
   console.log(`🚀 DapoerDjawa Backend running on port ${port}`);
 }
 
 bootstrap();
-

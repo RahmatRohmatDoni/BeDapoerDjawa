@@ -2,26 +2,26 @@ import { IsString, IsNumber, IsOptional, Min } from 'class-validator';
 
 export class FinalizeOrderDto {
   @IsString()
-  customerName: string;
+  customerName!: string;
 
   @IsString()
-  customerPhone: string;
+  customerPhone!: string;
 
   @IsString()
-  shippingAddress: string;
+  shippingAddress!: string;
 
   @IsString()
-  shippingCity: string;
+  shippingCity!: string;
 
   @IsString()
-  shippingPostalCode: string;
+  shippingPostalCode!: string;
 
   @IsString()
-  shippingCourier: string;
+  shippingCourier!: string;
 
   @IsNumber()
   @Min(0)
-  shippingCost: number;
+  shippingCost!: number;
 
   @IsOptional()
   @IsString()

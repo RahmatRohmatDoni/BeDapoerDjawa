@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
+    "postinstall": "yarn build",
     "start": "node dist/main",
     "start:dev": "tsc -p tsconfig.build.json && node --watch dist/main",
     "start:debug": "tsc -p tsconfig.build.json && node --inspect --watch dist/main",

@@ -4,11 +4,11 @@ import { RatesDto } from './dto/rates.dto';
 import { AuthGuard } from '../../common/guards/auth.guard';
 
 @Controller('shipping')
-@UseGuards(AuthGuard)
 export class ShippingController {
   constructor(private shippingService: ShippingService) {}
 
   @Post('rates')
+  @UseGuards(AuthGuard)
   async getRates(@Body() dto: RatesDto) {
     return this.shippingService.getRates(dto.destination, dto.weight, dto.length, dto.width, dto.height);
   }

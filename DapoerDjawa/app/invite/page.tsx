@@ -33,6 +33,14 @@ export default function InvitePage() {
 
         const url = new URL(window.location.href);
         const code = url.searchParams.get("code");
+        const tokenHash = url.searchParams.get("token_hash");
+        const errorParam = url.searchParams.get("error");
+        const errorDesc = url.searchParams.get("error_description");
+        const hash = window.location.hash;
+
+        if (errorParam) {
+          throw new Error(errorDesc || "Terjadi kesalahan dari server otentikasi.");
+        }
 
         // 1. Handle PKCE Code: Menukar kode dari URL dengan sesi otentikasi
         if (code) {
@@ -47,7 +55,7 @@ export default function InvitePage() {
           }
         }
 
-        // 2. Polling Sesi: Supabase terkadang membutuhkan waktu untuk me-resolve sesi di sisi client
+        // 2. Polling Sesi
         let session: Session | null = null;
         for (let attempt = 1; attempt <= 10; attempt++) {
           if (cancelled) return;
@@ -59,7 +67,9 @@ export default function InvitePage() {
           await new Promise((resolve) => setTimeout(resolve, 500));
         }
 
-        if (!session) throw new Error("Session tidak ditemukan. Buka ulang link invitation terbaru.");
+        if (!session) {
+          throw new Error(`Session tidak ditemukan. (Debug info: URL=${window.location.search || 'no-query'} Hash=${window.location.hash || 'no-hash'}) Buka ulang link invitation terbaru.`);
+        }
         const authUser = session.user;
         if (!authUser.email) throw new Error("Email tidak ditemukan pada invitation.");
 

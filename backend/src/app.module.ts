@@ -25,6 +25,7 @@ import { SettingsModule } from './modules/settings/settings.module';
     PaymentModule,
     AnalyticsModule,
     OrdersModule,
+    SettingsModule,
   ],
   providers: [
     {

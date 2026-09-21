@@ -51,7 +51,27 @@ export default function InvitePage() {
 
           if (exchangeError) {
             console.error("PKCE Exchange Error:", exchangeError.message);
-            // Lanjut saja ke tahap 2 (polling session), siapa tau kode sudah ditukar sebelumnya
+          }
+        }
+
+        // 1.5 Handle Implicit Flow Hash: Supabase mengirimkan access_token di dalam hash jika PKCE tidak dipakai (biasa terjadi pada invite)
+        if (hash && hash.includes("access_token=")) {
+          const hashParams = new URLSearchParams(hash.substring(1));
+          const accessToken = hashParams.get("access_token");
+          const refreshToken = hashParams.get("refresh_token");
+
+          if (accessToken && refreshToken) {
+            const { error: setSessionError } = await supabase.auth.setSession({
+              access_token: accessToken,
+              refresh_token: refreshToken,
+            });
+            
+            if (setSessionError) {
+              console.error("Set Session Error:", setSessionError.message);
+            }
+            
+            // Bersihkan hash dari URL agar rapi dan aman
+            window.history.replaceState({}, document.title, window.location.pathname + window.location.search);
           }
         }
 

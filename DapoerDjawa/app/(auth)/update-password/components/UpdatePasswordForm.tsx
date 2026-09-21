@@ -18,25 +18,49 @@ export default function UpdatePasswordForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  // Memverifikasi hash fragment URL (dari email) untuk mencegah akses langsung tanpa token recovery valid
   useEffect(() => {
-    const checkTimeout = setTimeout(() => {
-      const hash = window.location.hash;
+    let cancelled = false;
+    
+    const verifyAccess = async () => {
+      try {
+        const url = new URL(window.location.href);
+        const code = url.searchParams.get("code");
+        const errorParam = url.searchParams.get("error");
+        const errorDesc = url.searchParams.get("error_description");
 
-      if (hash.includes("error_code=otp_expired")) {
-        toast.add({ type: "error", title: "Link Kedaluwarsa", description: "Link reset password ini sudah tidak berlaku. Silakan minta link baru." });
-        return router.replace("/forgot-password");
+        if (errorParam) {
+          toast.add({ type: "error", title: "Akses Ditolak", description: errorDesc || "Link tidak valid." });
+          if (!cancelled) router.replace("/login");
+          return;
+        }
+
+        if (code) {
+          const { error } = await supabase.auth.exchangeCodeForSession(code);
+          if (error) throw error;
+          
+          url.searchParams.delete("code");
+          window.history.replaceState({}, document.title, url.toString());
+        }
+
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!session) {
+          toast.add({ type: "error", title: "Akses Ditolak", description: "Halaman ini hanya dapat diakses melalui link reset password yang valid." });
+          if (!cancelled) router.replace("/login");
+          return;
+        }
+
+        if (!cancelled) setIsAuthorized(true);
+      } catch (err: any) {
+        if (!cancelled) {
+          toast.add({ type: "error", title: "Link Kedaluwarsa", description: "Link reset password ini sudah tidak berlaku. Silakan minta link baru." });
+          router.replace("/forgot-password");
+        }
       }
+    };
 
-      if (!hash.includes("type=recovery")) {
-        toast.add({ type: "error", title: "Akses Ditolak", description: "Halaman ini hanya dapat diakses melalui link reset password yang valid." });
-        return router.replace("/login");
-      }
-      
-      setIsAuthorized(true);
-    }, 0);
-
-    return () => clearTimeout(checkTimeout);
+    verifyAccess();
+    return () => { cancelled = true; };
   }, [router]);
 
   const handleUpdatePassword = async (e: React.FormEvent<HTMLFormElement>) => {

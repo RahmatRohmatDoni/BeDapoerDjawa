@@ -3,6 +3,7 @@
 import type { Session } from "@supabase/supabase-js";
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Eye, EyeOff } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
 type AccessState = "checking" | "allowed" | "invalid";
@@ -13,6 +14,8 @@ export default function InvitePage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   
   const [accessState, setAccessState] = useState<AccessState>("checking");
   const [saving, setSaving] = useState(false);
@@ -154,19 +157,29 @@ export default function InvitePage() {
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
             <label htmlFor="password" className="mb-2 block text-sm font-medium text-gray-700">Password Baru</label>
-            <input
-              id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)}
-              placeholder="Minimal 8 karakter" autoComplete="new-password" disabled={saving}
-              className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition focus:border-black focus:ring-1 focus:ring-black disabled:bg-gray-100"
-            />
+            <div className="relative">
+              <input
+                id="password" type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)}
+                placeholder="Minimal 8 karakter" autoComplete="new-password" disabled={saving}
+                className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 pr-10 text-sm text-gray-900 outline-none transition focus:border-black focus:ring-1 focus:ring-black disabled:bg-gray-100"
+              />
+              <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors" tabIndex={-1}>
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
           </div>
           <div>
             <label htmlFor="confirmPassword" className="mb-2 block text-sm font-medium text-gray-700">Konfirmasi Password</label>
-            <input
-              id="confirmPassword" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)}
-              placeholder="Masukkan ulang password" autoComplete="new-password" disabled={saving}
-              className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition focus:border-black focus:ring-1 focus:ring-black disabled:bg-gray-100"
-            />
+            <div className="relative">
+              <input
+                id="confirmPassword" type={showConfirmPassword ? "text" : "password"} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="Masukkan ulang password" autoComplete="new-password" disabled={saving}
+                className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 pr-10 text-sm text-gray-900 outline-none transition focus:border-black focus:ring-1 focus:ring-black disabled:bg-gray-100"
+              />
+              <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors" tabIndex={-1}>
+                {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
           </div>
 
           <div className="rounded-lg bg-gray-50 px-4 py-3">

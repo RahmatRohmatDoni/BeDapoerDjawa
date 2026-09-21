@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2 } from "lucide-react";
+import { Loader2, Eye, EyeOff } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "@/components/ui/toast";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,8 @@ export default function UpdatePasswordForm() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isAuthorized, setIsAuthorized] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   // Memverifikasi hash fragment URL (dari email) untuk mencegah akses langsung tanpa token recovery valid
   useEffect(() => {
@@ -87,12 +89,22 @@ export default function UpdatePasswordForm() {
       <form className="space-y-5" onSubmit={handleUpdatePassword}>
         <div className="space-y-2">
           <Label htmlFor="password">Kata Sandi Baru</Label>
-          <Input id="password" name="password" type="password" placeholder="Minimal 6 karakter" value={password} onChange={(e) => setPassword(e.target.value)} disabled={isLoading} autoComplete="new-password" />
+          <div className="relative">
+            <Input id="password" name="password" type={showPassword ? "text" : "password"} placeholder="Minimal 6 karakter" value={password} onChange={(e) => setPassword(e.target.value)} disabled={isLoading} autoComplete="new-password" className="pr-10" />
+            <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors" tabIndex={-1}>
+              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
+          </div>
         </div>
 
         <div className="space-y-2">
           <Label htmlFor="confirmPassword">Konfirmasi Kata Sandi</Label>
-          <Input id="confirmPassword" name="confirmPassword" type="password" placeholder="Ketik ulang kata sandi baru" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} disabled={isLoading} autoComplete="new-password" />
+          <div className="relative">
+            <Input id="confirmPassword" name="confirmPassword" type={showConfirmPassword ? "text" : "password"} placeholder="Ketik ulang kata sandi baru" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} disabled={isLoading} autoComplete="new-password" className="pr-10" />
+            <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors" tabIndex={-1}>
+              {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
+          </div>
         </div>
 
         <Button type="submit" disabled={isLoading} className="mt-4 w-full bg-black text-white hover:bg-gray-800">

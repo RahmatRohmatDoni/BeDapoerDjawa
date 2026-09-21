@@ -65,7 +65,17 @@ export default function InvitePage() {
 
         // 3. Validasi Metadata: Pastikan link ini adalah invitation admin
         if (authUser.user_metadata?.invitation_type !== "admin_invitation") {
-          throw new Error("Invitation admin tidak valid.");
+          console.error("User metadata mismatch:", authUser.user_metadata);
+          // Jika metadata hilang tapi user ada di database sebagai admin, kita izinkan
+          const { data: checkProfile } = await supabase
+            .from("users")
+            .select("role")
+            .eq("id_user", authUser.id)
+            .maybeSingle();
+            
+          if (checkProfile?.role !== "admin") {
+            throw new Error(`Invitation admin tidak valid. Data metadata tidak sesuai.`);
+          }
         }
 
         // 4. Cek Database Profile: Pastikan user terdaftar di tabel users dan memiliki role admin
@@ -113,11 +123,21 @@ export default function InvitePage() {
     try {
       setSaving(true);
 
-      // Verifikasi ulang sesi sebelum menyimpan password untuk mencegah bypass
+      // Verifikasi ulang sesi sebelum menyimpan password
       const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user?.user_metadata?.invitation_type !== "admin_invitation") {
+      const authUser = session?.user;
+      
+      if (!authUser) {
         setAccessState("invalid");
         throw new Error("Session invalid. Silakan gunakan invitation terbaru.");
+      }
+
+      if (authUser.user_metadata?.invitation_type !== "admin_invitation") {
+        const { data: profile } = await supabase.from("users").select("role").eq("id_user", authUser.id).maybeSingle();
+        if (profile?.role !== "admin") {
+          setAccessState("invalid");
+          throw new Error("Anda tidak memiliki akses admin.");
+        }
       }
 
       // Update password pada sistem auth Supabase

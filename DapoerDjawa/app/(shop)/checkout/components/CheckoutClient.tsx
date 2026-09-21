@@ -119,9 +119,13 @@ export default function CheckoutClient() {
   const { data: dynamicCouriers, isFetching: isLoadingOngkir } = useQuery({
     queryKey: ["ongkir", watchDestId, totalWeight, totalLength, totalWidth, totalHeight],
     queryFn: async () => {
+      const { data: { session: ratesSession } } = await supabase.auth.getSession();
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/shipping/rates`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          ...(ratesSession?.access_token ? { Authorization: `Bearer ${ratesSession.access_token}` } : {}),
+        },
         body: JSON.stringify({ destination: watchDestId, weight: totalWeight, length: totalLength, width: totalWidth, height: totalHeight })
       });
       const result = await res.json();

@@ -37,10 +37,14 @@ export default function InvitePage() {
         // 1. Handle PKCE Code: Menukar kode dari URL dengan sesi otentikasi
         if (code) {
           const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
-          if (exchangeError) throw new Error("Link invitation kedaluwarsa atau tidak valid.");
-
+          
           url.searchParams.delete("code");
           window.history.replaceState({}, document.title, url.toString());
+
+          if (exchangeError) {
+            console.error("PKCE Exchange Error:", exchangeError.message);
+            // Lanjut saja ke tahap 2 (polling session), siapa tau kode sudah ditukar sebelumnya
+          }
         }
 
         // 2. Polling Sesi: Supabase terkadang membutuhkan waktu untuk me-resolve sesi di sisi client

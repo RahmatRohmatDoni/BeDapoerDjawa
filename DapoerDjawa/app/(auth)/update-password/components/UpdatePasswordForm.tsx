@@ -36,16 +36,21 @@ export default function UpdatePasswordForm() {
 
         if (code) {
           const { error } = await supabase.auth.exchangeCodeForSession(code);
-          if (error) throw error;
           
           url.searchParams.delete("code");
           window.history.replaceState({}, document.title, url.toString());
+
+          if (error) {
+            // Kita tampung pesan error-nya, tapi kita cek dulu apakah session-nya berhasil didapat atau tidak
+            console.error("PKCE Exchange Error:", error.message);
+          }
         }
 
+        // Cek apakah session berhasil dibuat (baik dari penukaran kode yang sukses, atau dari localStorage karena sudah ditukar sebelumnya)
         const { data: { session } } = await supabase.auth.getSession();
         
         if (!session) {
-          toast.add({ type: "error", title: "Akses Ditolak", description: "Halaman ini hanya dapat diakses melalui link reset password yang valid." });
+          toast.add({ type: "error", title: "Akses Ditolak", description: "Link tidak valid atau kadaluarsa. Harap minta link baru dan pastikan membuka link di browser yang sama." });
           if (!cancelled) router.replace("/login");
           return;
         }
@@ -53,7 +58,7 @@ export default function UpdatePasswordForm() {
         if (!cancelled) setIsAuthorized(true);
       } catch (err: any) {
         if (!cancelled) {
-          toast.add({ type: "error", title: "Link Kedaluwarsa", description: "Link reset password ini sudah tidak berlaku. Silakan minta link baru." });
+          toast.add({ type: "error", title: "Gagal Verifikasi", description: err.message || "Link reset password ini sudah tidak berlaku. Silakan minta link baru." });
           router.replace("/forgot-password");
         }
       }

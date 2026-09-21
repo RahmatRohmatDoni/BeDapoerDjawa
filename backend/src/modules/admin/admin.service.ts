@@ -43,7 +43,27 @@ export class AdminService {
     if (profileError) throw profileError;
 
     if (existingProfile) {
-      throw new ConflictException(`User dengan email tersebut sudah terdaftar dengan role ${existingProfile.role}.`);
+      if (existingProfile.role === 'admin' || existingProfile.role === 'owner') {
+        throw new ConflictException(`User dengan email tersebut sudah terdaftar dengan role ${existingProfile.role}.`);
+      }
+      
+      // Jika user sudah terdaftar sebagai pelanggan biasa (user), kita langsung jadikan admin
+      const { data: userData, error: userError } = await supabaseAdmin
+        .from('users')
+        .update({ role: 'admin', nama_user: finalNama, no_hp: noHp, alamat })
+        .eq('email', email)
+        .select('id_user, nama_user, no_hp, alamat, created_at, role, email')
+        .single();
+        
+      if (userError) throw userError;
+      
+      return {
+        success: true,
+        message: 'Akun pelanggan berhasil di-upgrade menjadi Admin.',
+        data: userData,
+        promoted: true,
+        redirectTo: null
+      };
     }
 
     let authUserId: string | null = null;

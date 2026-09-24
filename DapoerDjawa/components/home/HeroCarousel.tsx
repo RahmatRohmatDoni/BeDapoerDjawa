@@ -30,7 +30,7 @@ export default function HeroCarousel({ banners }: { banners: Banner[] }) {
           const isActive = index === currentSlide;
           
           const ImageElement = (
-            <div className="relative w-full aspect-[16/9] md:aspect-[21/9]">
+            <div className="relative w-full aspect-[16/9] md:aspect-[7/2]">
               <Image 
                 src={c.img} 
                 alt={c.alt} 

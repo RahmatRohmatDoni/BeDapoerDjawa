@@ -23,24 +23,10 @@ export class FinalizeOrderDto {
   @Min(0)
   shippingCost!: number;
 
+  @IsString()
+  shippingAreaId!: string;
+
   @IsOptional()
   @IsString()
   customerNote?: string;
-
-  @IsOptional()
-  @IsNumber()
-  totalWeight?: number;
-
-  @IsOptional()
-  @IsNumber()
-  totalLength?: number;
-
-  @IsOptional()
-  @IsNumber()
-  totalWidth?: number;
-
-  @IsOptional()
-  @IsNumber()
-  totalHeight?: number;
 }
-

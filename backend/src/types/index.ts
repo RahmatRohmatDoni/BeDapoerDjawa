@@ -101,5 +101,6 @@ export interface OrderRow {
   total_length: number | null;
   total_width: number | null;
   total_height: number | null;
+  shipping_area_id: string | null;
 }
 

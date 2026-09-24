@@ -88,16 +88,16 @@ export default function CheckoutClient() {
     enabled: !!orderId, 
   });
 
-  // LOGIC: Kalkulasi Dimensi Paket & Berat Toleransi
+  // LOGIC: Kalkulasi Dimensi Paket & Berat Toleransi (preview only — backend recalculates)
   let maxDiameter = 0;
   let totalItemHeight = 0;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const baseWeight = orderData?.order_items?.reduce((acc: number, item: any) => {
-    const { berat = 500, diameter = 12, tinggi = 5 } = item.produk_varian || {};
+    const { berat = 300, diameter = 12, tinggi = 5 } = item.produk_varian || {};
     maxDiameter = Math.max(maxDiameter, diameter);
     totalItemHeight += (tinggi * item.qty);
     return acc + (berat * item.qty);
-  }, 0) || 1000;
+  }, 0) || 300;
 
   const totalWeight = baseWeight + 150; 
   const totalLength = (maxDiameter || 12) + 2; 
@@ -126,27 +126,30 @@ export default function CheckoutClient() {
           'Content-Type': 'application/json',
           ...(ratesSession?.access_token ? { Authorization: `Bearer ${ratesSession.access_token}` } : {}),
         },
-        body: JSON.stringify({ destination: watchDestId, weight: totalWeight, length: totalLength, width: totalWidth, height: totalHeight })
+        body: JSON.stringify({ destination: watchDestId, weight: totalWeight, length: totalLength, width: totalWidth, height: totalHeight, itemValue: orderData?.subtotal || 50000 })
       });
       const result = await res.json();
       
       const domainMap: Record<string, string> = {
         jne: "jne.co.id", sicepat: "sicepat.com", jnt: "jet.co.id", ide: "idexpress.com",
-        sap: "sap-express.id", ninja: "ninjaxpress.co", pos: "posindonesia.co.id"
+        sap: "sap-express.id", ninja: "ninjaxpress.co", pos: "posindonesia.co.id",
+        anteraja: "anteraja.id", wahana: "wahana.com", tiki: "tiki.id"
       };
 
       return (result.data || []).map((item: KomerceCostItem) => {
         const rawEtd = item.estimation || item.etd || "";
-        const formattedEtd = rawEtd.toLowerCase().replace(/hari|days|day/g, "").trim() === "0" 
-          ? "Hari ini sampai (Same Day)" : `${rawEtd.replace(/hari|days|day/gi, "").trim()} hari ini sampai`;
+        const cleanedEtd = rawEtd.replace(/\s*(hari|days?)\s*/gi, "").trim();
+        const formattedEtd = cleanedEtd === "0" || cleanedEtd === "" 
+          ? "Same Day" : `Estimasi ${cleanedEtd} hari`;
         const courierCode = (item.code || 'jne').toLowerCase();
+        const courierDomain = domainMap[courierCode] || `${courierCode}.co.id`;
         
         return {
           id: item.id || item.code || Math.random().toString(),
           name: item.name || item.description || item.code || "Layanan Kurir",
           price: item.price || item.cost || 0,
           estimasi: formattedEtd || "Reguler", 
-          img: `https://logos.hunter.io/${domainMap[courierCode] || `${courierCode}.co.id`}` 
+          img: `https://www.google.com/s2/favicons?domain=${courierDomain}&sz=64` 
         } as ShippingCourier;
       });
     },
@@ -185,11 +188,8 @@ export default function CheckoutClient() {
           shippingPostalCode: formData.postalCode,
           shippingCourier: formData.courierName,
           shippingCost: formData.courierPrice,
+          shippingAreaId: formData.destinationId,
           customerNote: formData.customerNote,
-          totalWeight,
-          totalLength,
-          totalWidth,
-          totalHeight
         })
       });
 

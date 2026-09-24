@@ -41,7 +41,13 @@ function toNumber(value: number | string | null): number {
 }
 
 function getCourierCompany(shippingCourier: string | null): string {
-  return shippingCourier?.split('-')[0]?.trim().toLowerCase() || '';
+  const raw = shippingCourier?.split('-')[0]?.trim().toLowerCase() || '';
+  const aliasMap: Record<string, string> = {
+    'j&t': 'jnt', 'j & t': 'jnt', 'j&t express': 'jnt',
+    'si cepat': 'sicepat', 'anter aja': 'anteraja',
+    'id express': 'ide', 'pos indonesia': 'pos',
+  };
+  return aliasMap[raw] || raw;
 }
 
 function getCourierType(shippingCourier: string | null): string {
@@ -125,7 +131,8 @@ export class BiteshipService {
         shipping_cost, grand_total, shipping_courier, shipping_address, 
         customer_name, customer_phone, shipping_city, shipping_postal_code, 
         biteship_order_id, shipment_requested_at, total_weight,
-        total_length, total_width, total_height
+        total_length, total_width, total_height, shipping_area_id,
+        order_items(qty)
       `)
       .eq('id', orderId)
       .maybeSingle();
@@ -175,6 +182,11 @@ export class BiteshipService {
       throw new BadRequestException('Kode pos tujuan tidak valid');
     }
 
+    // Calculate total quantity from order items for accurate Biteship manifest
+    const totalQty = ((order as any).order_items || []).reduce(
+      (sum: number, item: { qty: number }) => sum + (Number(item.qty) || 1), 0
+    ) || 1;
+
     const payload = {
       shipper_contact_name: 'DapoerDjawa',
       shipper_contact_phone: this.configService.get('BITESHIP_ORIGIN_PHONE', '08123456789'),
@@ -189,6 +201,7 @@ export class BiteshipService {
       destination_contact_phone: typedOrder.customer_phone,
       destination_address: typedOrder.shipping_address,
       destination_postal_code: destinationPostalCode,
+      destination_area_id: typedOrder.shipping_area_id || undefined,
       destination_note: typedOrder.shipping_city || undefined,
       courier_company: courierCompany,
       courier_type: courierType,
@@ -201,11 +214,11 @@ export class BiteshipService {
           description: 'Pesanan makanan DapoerDjawa',
           category: 'food_and_drink',
           value: orderValue,
-          quantity: 1,
-          weight: typedOrder.total_weight || 1000,
-          length: typedOrder.total_length || 1,
-          width: typedOrder.total_width || 1,
-          height: typedOrder.total_height || 1,
+          quantity: totalQty,
+          weight: typedOrder.total_weight || 300,
+          length: typedOrder.total_length || 10,
+          width: typedOrder.total_width || 10,
+          height: typedOrder.total_height || 5,
         },
       ],
     };
@@ -215,7 +228,7 @@ export class BiteshipService {
     const biteshipResponse = await fetch(BITESHIP_API_URL, {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${biteshipApiKey}`,
+        Authorization: biteshipApiKey,
         'Content-Type': 'application/json',
         Accept: 'application/json',
       },
@@ -286,7 +299,7 @@ export class BiteshipService {
       `https://api.biteship.com/v1/trackings/${safeResi}/couriers/${safeCourier}`,
       {
         method: 'GET',
-        headers: { Authorization: `Bearer ${biteshipApiKey}` },
+        headers: { Authorization: biteshipApiKey },
       },
     );
 

@@ -10,7 +10,7 @@ export class ShippingController {
   @Post('rates')
   @UseGuards(AuthGuard)
   async getRates(@Body() dto: RatesDto) {
-    return this.shippingService.getRates(dto.destination, dto.weight, dto.length, dto.width, dto.height);
+    return this.shippingService.getRates(dto.destination, dto.weight, dto.length, dto.width, dto.height, dto.itemValue);
   }
 
   @Get('areas')

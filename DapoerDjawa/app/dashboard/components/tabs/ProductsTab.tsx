@@ -344,15 +344,15 @@ export default function ProductsTab() {
       return;
     }
     if (!Number.isInteger(weight) || weight <= 0) {
-      toast.error("Berat produk tidak valid (harus lebih dari 0).");
+      toast.error("Berat kemasan tidak valid (harus lebih dari 0 gram).");
       return;
     }
     if (!Number.isFinite(tinggi) || tinggi <= 0) {
-      toast.error("Tinggi produk tidak valid.");
+      toast.error("Tinggi kemasan tidak valid.");
       return;
     }
     if (!Number.isFinite(diameter) || diameter <= 0) {
-      toast.error("Diameter produk tidak valid.");
+      toast.error("Lebar/diameter kemasan tidak valid.");
       return;
     }
 
@@ -851,26 +851,26 @@ export default function ProductsTab() {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="block text-sm font-medium text-gray-700">Berat Keseluruhan (gram)</label>
+                  <label className="block text-sm font-medium text-gray-700">Berat Total Kemasan (gram)</label>
                   <input required type="number" min="1" value={formWeight} onChange={(e) => setFormWeight(e.target.value)} className="w-full rounded-lg border px-4 py-2 outline-none focus:ring-2 focus:ring-amber-500" placeholder="Cth: 580" />
                   <p className="text-[11px] text-gray-500 leading-tight">
-                    *Tolong input berat dilebihkan 80gram dari total produk nya karena sekalian menghitung berat toples, misal produk bersih 500gr, ditambah berat 80gram toples maka jadi 580gr.
+                    *Produk satuan: berat produk + kemasan (misal 500gr + 80gr toples = 580gr). Produk bundle/paket: total berat semua isi + kardus.
                   </p>
                 </div>
                 
                 <div className="space-y-1">
-                  <label className="block text-sm font-medium text-gray-700">Diameter Toples (cm)</label>
+                  <label className="block text-sm font-medium text-gray-700">Lebar / Diameter Kemasan (cm)</label>
                   <input required type="number" min="1" step="0.1" value={formDiameter} onChange={(e) => setFormDiameter(e.target.value)} className="w-full rounded-lg border px-4 py-2 outline-none focus:ring-2 focus:ring-amber-500" placeholder="Cth: 14" />
                   <p className="text-[11px] text-gray-500 leading-tight">
-                    *Tolong input diameter dari toples.
+                    *Produk satuan: diameter toples. Bundle/paket: lebar kardus pengiriman.
                   </p>
                 </div>
 
                 <div className="space-y-1">
-                  <label className="block text-sm font-medium text-gray-700">Tinggi Toples (cm)</label>
+                  <label className="block text-sm font-medium text-gray-700">Tinggi Kemasan (cm)</label>
                   <input required type="number" min="1" step="0.1" value={formTinggi} onChange={(e) => setFormTinggi(e.target.value)} className="w-full rounded-lg border px-4 py-2 outline-none focus:ring-2 focus:ring-amber-500" placeholder="Cth: 6" />
                   <p className="text-[11px] text-gray-500 leading-tight">
-                    *Tolong input tinggi dari toples.
+                    *Produk satuan: tinggi toples. Bundle/paket: tinggi kardus pengiriman.
                   </p>
                 </div>
               </div>

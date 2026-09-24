@@ -22,7 +22,7 @@ export class ShippingService {
 
   constructor(private configService: ConfigService) {}
 
-  async getRates(destination: string, weight?: number, length?: number, width?: number, height?: number) {
+  async getRates(destination: string, weight?: number, length?: number, width?: number, height?: number, itemValue?: number) {
     const originAreaId = this.configService.get('BITESHIP_ORIGIN_AREA_ID', '');
     const biteshipApiKey = this.configService.getOrThrow<string>('BITESHIP_API_KEY');
 
@@ -34,7 +34,7 @@ export class ShippingService {
         {
           name: 'Pesanan Produk',
           description: 'Produk DapoerDjawa',
-          value: 50000,
+          value: itemValue || 50000,
           length: length || 10,
           width: width || 10,
           height: height || 10,

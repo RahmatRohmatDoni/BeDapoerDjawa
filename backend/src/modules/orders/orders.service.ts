@@ -1,12 +1,16 @@
 import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { SupabaseService } from '../../config/supabase.config';
+import { ShippingService } from '../shipping/shipping.service';
 import * as crypto from 'crypto';
 
 @Injectable()
 export class OrdersService {
   private readonly logger = new Logger(OrdersService.name);
 
-  constructor(private supabaseService: SupabaseService) {}
+  constructor(
+    private supabaseService: SupabaseService,
+    private shippingService: ShippingService,
+  ) {}
 
   async checkout(userId: string, promoCode?: string) {
     const supabase = this.supabaseService.adminClient;
@@ -151,7 +155,9 @@ export class OrdersService {
   async finalizeOrder(orderId: string, userId: string, payload: any) {
     const supabase = this.supabaseService.adminClient;
 
-    // 1. Fetch order and verify ownership
+    // ═══════════════════════════════════════════════════════════════
+    // STEP 1: Fetch order & verify ownership + status
+    // ═══════════════════════════════════════════════════════════════
     const { data: order, error } = await supabase
       .from('orders')
       .select('*')
@@ -162,16 +168,109 @@ export class OrdersService {
     if (order.user_id !== userId) throw new BadRequestException('Akses ditolak (Bukan pesanan Anda)');
     if (order.status !== 'draft') throw new BadRequestException('Pesanan sudah diproses');
 
-    // 2. Validate shipping cost
-    const shippingCost = Number(payload.shippingCost) || 0;
-    if (shippingCost < 0) throw new BadRequestException('Biaya pengiriman tidak valid');
+    // ═══════════════════════════════════════════════════════════════
+    // STEP 2: SERVER-SIDE — Hitung berat & dimensi dari DB
+    // Tidak trust apapun dari client untuk weight/dimensions
+    // ═══════════════════════════════════════════════════════════════
+    const { data: orderItems, error: itemsErr } = await supabase
+      .from('order_items')
+      .select('qty, variant_id, produk_varian(berat, tinggi, diameter)')
+      .eq('order_id', orderId);
 
-    // 3. Calculate grand total securely on server
+    if (itemsErr) {
+      this.logger.error('Failed to fetch order items for weight calc', itemsErr);
+      throw new BadRequestException('Gagal menghitung dimensi paket');
+    }
+
+    if (!orderItems || orderItems.length === 0) {
+      throw new BadRequestException('Pesanan tidak memiliki item');
+    }
+
+    let baseWeight = 0;
+    let maxDiameter = 0;
+    let totalItemHeight = 0;
+
+    for (const item of orderItems) {
+      const variant = item.produk_varian as any;
+      const berat = Number(variant?.berat) || 300;
+      const diameter = Number(variant?.diameter) || 12;
+      const tinggi = Number(variant?.tinggi) || 5;
+      const qty = Number(item.qty) || 1;
+
+      baseWeight += berat * qty;
+      maxDiameter = Math.max(maxDiameter, diameter);
+      totalItemHeight += tinggi * qty;
+    }
+
+    // Toleransi packing: +150g berat, +2cm L/W, +3cm tinggi
+    const totalWeight = (baseWeight || 300) + 150;
+    const totalLength = (maxDiameter || 12) + 2;
+    const totalWidth = (maxDiameter || 12) + 2;
+    const totalHeight = (totalItemHeight || 5) + 3;
+
+    // ═══════════════════════════════════════════════════════════════
+    // STEP 3: SERVER-SIDE — Verifikasi ongkir via Biteship API
+    // Panggil Biteship rates langsung dari backend, cocokkan harga
+    // yang dikirim client dengan harga ASLI dari Biteship
+    // ═══════════════════════════════════════════════════════════════
+    const clientCourier = String(payload.shippingCourier || '').trim();
+    const clientCost = Number(payload.shippingCost);
+    const destinationAreaId = String(payload.shippingAreaId || '').trim();
+
+    if (!clientCourier) throw new BadRequestException('Kurir pengiriman wajib dipilih');
+    if (!Number.isFinite(clientCost) || clientCost < 0) throw new BadRequestException('Biaya pengiriman tidak valid');
+    if (!destinationAreaId) throw new BadRequestException('Area tujuan pengiriman wajib dipilih');
+
     const subtotal = Number(order.subtotal || 0);
     const discount = Number(order.discount || 0);
+
+    // Call Biteship rates from backend — same params as frontend preview
+    const ratesResult = await this.shippingService.getRates(
+      destinationAreaId,
+      totalWeight,
+      totalLength,
+      totalWidth,
+      totalHeight,
+      Math.max(0, subtotal - discount),
+    );
+
+    if (!ratesResult.data || ratesResult.data.length === 0) {
+      this.logger.error(`Biteship rates returned empty for destination ${destinationAreaId}`);
+      throw new BadRequestException('Gagal memverifikasi ongkos kirim. Coba lagi.');
+    }
+
+    // Parse courier name to find matching rate
+    // Client sends format: "JNE - Reguler", Biteship returns: { name: "JNE - REG", cost: 25000 }
+    const normalizeStr = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const clientCourierNorm = normalizeStr(clientCourier);
+
+    const matchedRate = ratesResult.data.find((rate: any) => 
+      normalizeStr(rate.name) === clientCourierNorm || normalizeStr(rate.id) === clientCourierNorm
+    );
+
+    if (!matchedRate) {
+      this.logger.warn(`Courier "${clientCourier}" not found in Biteship rates. Available: ${ratesResult.data.map((r: any) => r.name).join(', ')}`);
+      throw new BadRequestException(`Kurir "${clientCourier}" tidak tersedia untuk tujuan ini. Silakan pilih kurir lain.`);
+    }
+
+    // Verify price — tolerance of Rp 1 for rounding
+    const verifiedCost = Number(matchedRate.cost);
+    if (Math.abs(clientCost - verifiedCost) > 1) {
+      this.logger.warn(
+        `SHIPPING COST MISMATCH: client sent ${clientCost}, Biteship says ${verifiedCost} for courier ${clientCourier} (order ${orderId})`
+      );
+      throw new BadRequestException(
+        `Harga ongkir tidak sesuai. Harga terbaru: Rp${verifiedCost.toLocaleString('id-ID')}. Silakan refresh halaman checkout.`
+      );
+    }
+
+    // Use verified cost, not client cost
+    const shippingCost = verifiedCost;
     const grandTotal = Math.max(0, subtotal - discount + shippingCost);
 
-    // 4. Update order with secure values
+    // ═══════════════════════════════════════════════════════════════
+    // STEP 4: Simpan order dengan semua nilai yang terverifikasi
+    // ═══════════════════════════════════════════════════════════════
     const { data: updatedOrder, error: updateError } = await supabase
       .from('orders')
       .update({
@@ -185,10 +284,11 @@ export class OrdersService {
         grand_total: grandTotal,
         customer_note: payload.customerNote,
         status: 'pending',
-        total_weight: payload.totalWeight,
-        total_length: payload.totalLength,
-        total_width: payload.totalWidth,
-        total_height: payload.totalHeight
+        total_weight: totalWeight,
+        total_length: totalLength,
+        total_width: totalWidth,
+        total_height: totalHeight,
+        shipping_area_id: destinationAreaId,
       })
       .eq('id', orderId)
       .select()
@@ -199,7 +299,9 @@ export class OrdersService {
       throw new BadRequestException('Gagal menyimpan detail pengiriman');
     }
 
-    // 5. Update user profile information synchronously
+    // ═══════════════════════════════════════════════════════════════
+    // STEP 5: Update user profile
+    // ═══════════════════════════════════════════════════════════════
     await supabase
       .from('users')
       .update({
@@ -212,3 +314,4 @@ export class OrdersService {
     return { success: true, order: updatedOrder };
   }
 }
+

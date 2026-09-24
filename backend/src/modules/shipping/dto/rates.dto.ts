@@ -28,5 +28,10 @@ export class RatesDto {
   @Min(1)
   @Max(1000)
   height?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  itemValue?: number;
 }
 

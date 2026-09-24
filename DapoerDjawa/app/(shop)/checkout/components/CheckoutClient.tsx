@@ -236,7 +236,7 @@ export default function CheckoutClient() {
 
   return (
     <main className="container mx-auto max-w-7xl px-4 md:px-6 pt-24 lg:pt-32 pb-12 lg:pb-16 flex-1 w-full relative z-0">
-      <Script src="https://app.sandbox.midtrans.com/snap/snap.js" data-client-key={process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY} strategy="lazyOnload" />
+      <Script src={`https://app.${process.env.NEXT_PUBLIC_MIDTRANS_ENV === 'production' ? '' : 'sandbox.'}midtrans.com/snap/snap.js`} data-client-key={process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY} strategy="lazyOnload" />
 
       <div className="mb-6 lg:mb-10 text-center md:text-left">
         <h1 className="text-2xl md:text-3xl font-extrabold text-gray-900 tracking-tight">Checkout</h1>

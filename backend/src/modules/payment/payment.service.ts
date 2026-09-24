@@ -136,11 +136,6 @@ export class PaymentService {
       throw new ForbiddenException('Jumlah pembayaran tidak sesuai dengan order');
     }
 
-    // Idempotency check
-    if (['paid', 'shipped', 'delivered'].includes(existingOrder.status)) {
-      return { success: true, message: 'Order sudah diproses sebelumnya', order_id, status: existingOrder.status };
-    }
-
     // Deteksi metode pembayaran
     let paymentMethod = payment_type || 'unknown';
     if (payment_type === 'bank_transfer' && Array.isArray(va_numbers) && va_numbers[0]?.bank) {
@@ -149,7 +144,7 @@ export class PaymentService {
       paymentMethod = 'Mandiri Bill Payment';
     }
 
-    // Mapping status
+    // Mapping status Midtrans → status order
     let orderStatus = 'pending';
     if (transaction_status === 'settlement' || (transaction_status === 'capture' && fraud_status === 'accept')) {
       orderStatus = 'paid';
@@ -161,15 +156,40 @@ export class PaymentService {
       orderStatus = 'refunded';
     }
 
-    // Update order
-    const { error: updateError } = await supabase
+    // ═══════════════════════════════════════════════════════════════
+    // ATOMIC CONDITIONAL UPDATE — Anti race condition
+    // Hanya update jika status BELUM terminal (paid/shipped/delivered)
+    // Kalau 2 webhook tiba bersamaan, hanya 1 yang berhasil update
+    // ═══════════════════════════════════════════════════════════════
+    const terminalStatuses = ['paid', 'shipped', 'delivered'];
+
+    // Early return jika sudah terminal (fast path, non-atomic tapi aman karena
+    // atomic check di bawah tetap jadi safety net)
+    if (terminalStatuses.includes(existingOrder.status)) {
+      return { success: true, message: 'Order sudah diproses sebelumnya', order_id, status: existingOrder.status };
+    }
+
+    // ATOMIC update: hanya berhasil jika status BELUM terminal
+    const { data: updatedRows, error: updateError } = await supabase
       .from('orders')
       .update({ status: orderStatus, payment_method: paymentMethod })
-      .eq('id', order_id);
+      .eq('id', order_id)
+      .not('status', 'in', `(${terminalStatuses.join(',')})`)
+      .select('id');
 
     if (updateError) throw updateError;
 
-    // Pemotongan stok otomatis saat pembayaran lunas
+    // Jika 0 rows affected → order sudah diproses oleh webhook lain
+    if (!updatedRows || updatedRows.length === 0) {
+      this.logger.log(`Webhook duplicate ignored for order ${order_id} (already terminal)`);
+      return { success: true, message: 'Order sudah diproses sebelumnya', order_id };
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // Pemotongan stok — HANYA jika atomic update berhasil
+    // Dijamin tidak akan double-decrement karena hanya 1 webhook
+    // yang berhasil melewati atomic update di atas
+    // ═══════════════════════════════════════════════════════════════
     if (orderStatus === 'paid') {
       const { data: items, error: itemsError } = await supabase
         .from('order_items')

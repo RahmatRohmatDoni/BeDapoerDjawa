@@ -125,6 +125,7 @@ export default function SettingsTab() {
   const [banners, setBanners] = useState<HeroBanner[]>([]);
   const [promos, setPromos] = useState<PromoCode[]>([]);
   const [admins, setAdmins] = useState<AdminUser[]>([]);
+  const [productList, setProductList] = useState<{ id: string; nama_produk: string }[]>([]);
 
   // =========================================================
   // MODAL STATES
@@ -194,7 +195,7 @@ export default function SettingsTab() {
 
   const fetchData = useCallback(async () => {
     try {
-      const [resBanners, resPromos, resAdmins] = await Promise.all([
+      const [resBanners, resPromos, resAdmins, resProducts] = await Promise.all([
         supabase
           .from("hero_banners")
           .select("*")
@@ -210,6 +211,11 @@ export default function SettingsTab() {
           .select("id_user, nama_user, email, role, no_hp, alamat, created_at")
           .eq("role", "admin")
           .order("created_at", { ascending: false }),
+
+        supabase
+          .from("produk")
+          .select("id, nama_produk")
+          .order("nama_produk", { ascending: true }),
       ]);
 
       if (resBanners.error) {
@@ -225,6 +231,7 @@ export default function SettingsTab() {
       if (resBanners.data) setBanners(resBanners.data);
       if (resPromos.data) setPromos(resPromos.data);
       if (resAdmins.data) setAdmins(resAdmins.data);
+      if (resProducts.data) setProductList(resProducts.data);
     } catch (error) {
       console.error("Gagal mengambil data settings:", error);
     } finally {
@@ -1077,17 +1084,50 @@ export default function SettingsTab() {
                 </div>
                 <div>
                   <label className="text-xs font-bold text-gray-700">
-                    Link Tujuan
+                    Link Tujuan (Klik Banner Menuju)
                   </label>
-                  <input
-                    type="text"
-                    value={bannerForm.link_url}
-                    onChange={(e) =>
-                      setBannerForm({ ...bannerForm, link_url: e.target.value })
+                  <select
+                    value={
+                      bannerForm.link_url.startsWith("/product/")
+                        ? bannerForm.link_url
+                        : bannerForm.link_url
+                        ? "__custom__"
+                        : ""
                     }
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val === "__custom__") {
+                        setBannerForm({ ...bannerForm, link_url: "" });
+                      } else {
+                        setBannerForm({ ...bannerForm, link_url: val });
+                      }
+                    }}
                     className="w-full mt-1 p-2.5 border rounded-xl text-sm"
-                    placeholder="Contoh: /products (opsional)"
-                  />
+                  >
+                    <option value="">— Tanpa Link (tidak bisa diklik) —</option>
+                    {productList.map((p) => (
+                      <option key={p.id} value={`/product/${p.id}`}>
+                        🛒 {p.nama_produk}
+                      </option>
+                    ))}
+                    <option value="__custom__">✏️ Custom URL (tulis sendiri)</option>
+                  </select>
+                  {(bannerForm.link_url && !bannerForm.link_url.startsWith("/product/")) && (
+                    <input
+                      type="text"
+                      value={bannerForm.link_url}
+                      onChange={(e) =>
+                        setBannerForm({ ...bannerForm, link_url: e.target.value })
+                      }
+                      className="w-full mt-2 p-2.5 border rounded-xl text-sm"
+                      placeholder="Contoh: /products atau https://..."
+                    />
+                  )}
+                  {bannerForm.link_url && (
+                    <p className="mt-1 text-[11px] text-gray-500">
+                      Link: <code className="bg-gray-100 px-1 rounded">{bannerForm.link_url}</code>
+                    </p>
+                  )}
                 </div>
                 <div>
                   <label className="text-xs font-bold text-gray-700">

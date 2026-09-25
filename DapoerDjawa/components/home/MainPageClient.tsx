@@ -47,6 +47,7 @@ async function fetchMainPageData(): Promise<MainPageData> {
 }
 
 export default function MainPageClient() {
+  const storeSettings = useStoreSettings();
   const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ["mainPageData"],
     queryFn: fetchMainPageData,

@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import ForgotPassForm from "@/app/(auth)/forgot-password/components/ForgotPassForm";
 import { Footer } from "@/components/layout/Navbar";
+import { STORE_NAME } from "@/lib/store-defaults";
 
 export const metadata: Metadata = {
-  title: "Reset Password | DapoerDjawa",
-  description: "Reset password akun DapoerDjawa dengan mudah. Masukkan alamat email Anda untuk menerima instruksi pengaturan ulang password.",
+  title: `Reset Password | ${STORE_NAME}`,
+  description: `Reset password akun ${STORE_NAME} dengan mudah. Masukkan alamat email Anda untuk menerima instruksi pengaturan ulang password.`,
   robots: { index: false, follow: false },
 };
 

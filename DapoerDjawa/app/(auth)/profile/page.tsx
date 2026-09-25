@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import UserProfile from "@/app/(auth)/profile/components/UserProfile";
 import { Footer } from "@/components/layout/Navbar";
+import { STORE_NAME } from "@/lib/store-defaults";
 
 export const metadata: Metadata = {
-  title: "Profil Akun | DapoerDjawa",
-  description: "Lihat informasi profil, alamat email, dan hak akses akun DapoerDjawa Anda.",
+  title: `Profil Akun | ${STORE_NAME}`,
+  description: `Lihat informasi profil, alamat email, dan hak akses akun ${STORE_NAME} Anda.`,
   robots: { index: false, follow: false },
 };
 

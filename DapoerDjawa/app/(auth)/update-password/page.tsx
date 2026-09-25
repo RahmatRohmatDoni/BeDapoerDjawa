@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import UpdatePasswordForm from "./components/UpdatePasswordForm";
 import { Footer } from "@/components/layout/Navbar";
+import { STORE_NAME } from "@/lib/store-defaults";
 
 export const metadata: Metadata = {
-  title: "Update Password | DapoerDjawa",
-  description: "Perbarui kata sandi akun DapoerDjawa Anda dengan aman dan mudah.",
+  title: `Update Password | ${STORE_NAME}`,
+  description: `Perbarui kata sandi akun ${STORE_NAME} Anda dengan aman dan mudah.`,
   robots: { index: false, follow: false },
 };
 

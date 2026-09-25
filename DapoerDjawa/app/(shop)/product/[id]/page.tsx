@@ -3,18 +3,19 @@ import { Metadata } from "next";
 import { supabase } from "@/lib/supabase"; 
 import { Footer } from "@/components/layout/Navbar"; 
 import DetailClient from "./components/DetailClient"; 
+import { STORE_NAME } from "@/lib/store-defaults";
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
-  if (!id) return { title: "URL Tidak Valid | DapoerDjawa" };
+  if (!id) return { title: `URL Tidak Valid | ${STORE_NAME}` };
 
   const { data, error } = await supabase.from("produk").select("*").eq("id", id).single();
   if (error) console.error("Error saat menarik SEO Supabase:", error.message);
-  if (!data) return { title: "Produk Tidak Ditemukan | DapoerDjawa" };
+  if (!data) return { title: `Produk Tidak Ditemukan | ${STORE_NAME}` };
   
   return {
-    title: `${data.nama_produk} | DapoerDjawa`,
-    description: data.deskripsi ? `${data.deskripsi.slice(0, 150)}...` : "Kue kering premium dari DapoerDjawa",
+    title: `${data.nama_produk} | ${STORE_NAME}`,
+    description: data.deskripsi ? `${data.deskripsi.slice(0, 150)}...` : `Kue kering premium dari ${STORE_NAME}`,
     openGraph: { images: [data.foto_2 || "/placeholder.png"] }
   };
 }

@@ -1,10 +1,11 @@
 import { Metadata } from "next";
 import LoginForm from "./components/LoginForm";
 import { Footer } from "@/components/layout/Navbar";
+import { STORE_NAME } from "@/lib/store-defaults";
 
 export const metadata: Metadata = {
-  title: "Login | DapoerDjawa",
-  description: "Masuk ke akun DapoerDjawa Anda untuk mulai berbelanja kue kering premium khas Balikpapan.",
+  title: `Login | ${STORE_NAME}`,
+  description: `Masuk ke akun ${STORE_NAME} Anda untuk mulai berbelanja kue kering premium khas Balikpapan.`,
 };
 
 export default function LoginPage() {

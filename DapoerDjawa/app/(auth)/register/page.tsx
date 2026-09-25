@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 import SignUpForm from "@/app/(auth)/register/components/SignUpForm";
 import { Footer } from "@/components/layout/Navbar";
+import { STORE_NAME } from "@/lib/store-defaults";
 
 export const metadata: Metadata = {
-  title: "Sign Up | Dapoer Djawa",
-  description: "Buat akun Dapoer Djawa untuk menikmati kemudahan berbelanja berbagai pilihan kue dan cookies khas Dapoer Djawa.",
-  keywords: ["Dapoer Djawa", "Daftar Dapoer Djawa", "Sign Up Dapoer Djawa", "cookies", "kue", "toko kue"],
+  title: `Sign Up | ${STORE_NAME}`,
+  description: `Buat akun ${STORE_NAME} untuk menikmati kemudahan berbelanja berbagai pilihan kue dan cookies khas ${STORE_NAME}.`,
+  keywords: [STORE_NAME, `Daftar ${STORE_NAME}`, `Sign Up ${STORE_NAME}`, "cookies", "kue", "toko kue"],
   robots: { index: false, follow: false },
 };
 

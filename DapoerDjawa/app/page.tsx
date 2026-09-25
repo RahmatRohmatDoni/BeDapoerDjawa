@@ -1,16 +1,17 @@
 import { Metadata } from "next";
 import MainPageClient from "@/components/home/MainPageClient";
 import { Footer } from "@/components/layout/Navbar";
+import { STORE_NAME, STORE_TAGLINE, STORE_DESCRIPTION, STORE_DOMAIN } from "@/lib/store-defaults";
 
 export const metadata: Metadata = {
-  title: "DapoerDjawa | Toko Kue Kering Premium Balikpapan",
-  description: "Nikmati aneka kue kering premium khas rumahan dari DapoerDjawa Balikpapan. Tersedia Nastar, Kastengel, Putri Salju, dan varian cookies lezat lainnya.",
-  keywords: ["kue kering balikpapan", "nastar premium", "dapoerdjawa", "toko kue balikpapan", "kue lebaran"],
+  title: `${STORE_NAME} | ${STORE_TAGLINE}`,
+  description: `Nikmati aneka kue kering premium khas rumahan dari ${STORE_NAME} Balikpapan. Tersedia Nastar, Kastengel, Putri Salju, dan varian cookies lezat lainnya.`,
+  keywords: ["kue kering balikpapan", "nastar premium", STORE_NAME.toLowerCase(), "toko kue balikpapan", "kue lebaran"],
   openGraph: {
-    title: "DapoerDjawa - Toko Kue Kering Premium",
-    description: "Aneka kue kering premium khas rumahan dari DapoerDjawa Balikpapan.",
-    url: "https://dapoerdjawa.com",
-    siteName: "DapoerDjawa",
+    title: `${STORE_NAME} - Toko Kue Kering Premium`,
+    description: `Aneka kue kering premium khas rumahan dari ${STORE_NAME} Balikpapan.`,
+    url: STORE_DOMAIN,
+    siteName: STORE_NAME,
     images: [{ url: "/logo.png", width: 800, height: 600 }],
     locale: "id_ID",
     type: "website",

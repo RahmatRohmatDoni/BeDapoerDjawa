@@ -2,10 +2,11 @@ import React from "react";
 import { Metadata } from "next";
 import CartClient from "./components/CartClient";
 import { Footer } from "@/components/layout/Navbar";
+import { STORE_NAME } from "@/lib/store-defaults";
 
 export const metadata: Metadata = {
-  title: "Keranjang Belanja | DapoerDjawa",
-  description: "Kelola pesanan kue favorit Anda di keranjang belanja DapoerDjawa sebelum melanjutkan ke halaman pembayaran yang aman.",
+  title: `Keranjang Belanja | ${STORE_NAME}`,
+  description: `Kelola pesanan kue favorit Anda di keranjang belanja ${STORE_NAME} sebelum melanjutkan ke halaman pembayaran yang aman.`,
   robots: { index: false, follow: false },
 };
 

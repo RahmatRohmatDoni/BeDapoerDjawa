@@ -4,6 +4,7 @@ import React from "react";
 import Link from "next/link";
 import { Star, CheckCircle, User, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useStoreSettings } from "@/lib/store-settings-context";
 
 export interface ProductVariant { id: string; ukuran: string; }
 export interface ProductDisplay { id: string; variants: ProductVariant[]; }
@@ -40,6 +41,7 @@ export default function ReviewSection({
   isSubmittingReview, handleSubmitReview, setConfirmDeleteId,
   replyingTo, setReplyingTo, replyText, setReplyText, handleSubmitReply, isSubmittingReply
 }: ReviewSectionProps) {
+  const storeSettings = useStoreSettings();
   
   return (
     <div className="mb-12 md:mb-20">
@@ -149,7 +151,7 @@ export default function ReviewSection({
 
                     {rev.reply && (
                       <div className="mt-3 md:mt-4 p-3 md:p-4 bg-gray-50 rounded-xl border border-gray-200">
-                        <p className="text-[10px] md:text-xs font-bold text-gray-900 mb-1">Balasan dari Admin DapoerDjawa:</p>
+                        <p className="text-[10px] md:text-xs font-bold text-gray-900 mb-1">{`Balasan dari Admin ${storeSettings.store_name}:`}</p>
                         <p className="text-xs md:text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">{rev.reply}</p>
                       </div>
                     )}

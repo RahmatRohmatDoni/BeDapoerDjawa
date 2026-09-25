@@ -1,8 +1,9 @@
 import DashboardClient from "@/app/dashboard/components/DashboardClient";
+import { STORE_NAME } from "@/lib/store-defaults";
 
 export const metadata = {
-  title: "Dashboard | Dapoer Djawa",
-  description: "Panel manajemen produk dan pesanan Dapoer Djawa.",
+  title: `Dashboard | ${STORE_NAME}`,
+  description: `Panel manajemen produk dan pesanan ${STORE_NAME}.`,
 };
 
 async function fetchDashboardStats() {

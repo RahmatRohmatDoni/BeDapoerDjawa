@@ -2,9 +2,10 @@ import React from "react";
 import { Metadata } from "next";
 import { Footer } from "@/components/layout/Navbar";
 import HistoryClient from "./components/HistoryClient";
+import { STORE_NAME } from "@/lib/store-defaults";
 
 export const metadata: Metadata = {
-  title: "Riwayat Pesanan | DapoerDjawa",
+  title: `Riwayat Pesanan | ${STORE_NAME}`,
   description: "Lacak pesanan dan lihat riwayat transaksimu dengan mudah dan aman.",
 };
 

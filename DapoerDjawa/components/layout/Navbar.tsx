@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { type Session } from "@supabase/supabase-js"; // Tambahan import tipe Session
+import { useStoreSettings } from "@/lib/store-settings-context";
 
 // =========================================================
 // TYPES
@@ -20,34 +21,39 @@ type DatabaseUser = {
 // SOCIAL MEDIA & FOOTER
 // =========================================================
 
-const socialLinks = [
-  { href: "https://instagram.com/_dapoer_djawa", img: "/instagram.png", alt: "Instagram DapoerDjawa" },
-  { href: "https://tiktok.com/@dapoer_djawa", img: "/tiktok.png", alt: "TikTok DapoerDjawa" },
-  { href: "https://wa.me/62895383270632", img: "/wa.png", alt: "WhatsApp DapoerDjawa" },
-];
+export const Footer = () => {
+  const storeSettings = useStoreSettings();
+  
+  const socialLinks = [
+    { href: storeSettings.contact_instagram || "#", img: "/instagram.png", alt: `Instagram ${storeSettings.store_name}` },
+    { href: storeSettings.contact_tiktok || "#", img: "/tiktok.png", alt: `TikTok ${storeSettings.store_name}` },
+    { href: `https://wa.me/${storeSettings.contact_whatsapp}` || "#", img: "/wa.png", alt: `WhatsApp ${storeSettings.store_name}` },
+  ];
 
-export const Footer = () => (
-  <footer className="mt-auto w-full border-t border-gray-200 bg-gray-50 py-10">
-    <div className="container mx-auto flex flex-col items-center justify-between px-6 md:flex-row">
-      <p className="mb-4 text-center text-sm text-gray-600 md:mb-0 md:text-left">
-        &copy; 2026 DapoerDjawa. All rights reserved.
-      </p>
-      <div className="flex items-center gap-6">
-        {socialLinks.map(({ href, img, alt }) => (
-          <a key={alt} href={href} target="_blank" rel="noopener noreferrer" aria-label={alt} className="transition-transform hover:scale-110">
-            <Image src={img} alt={alt} width={32} height={32} className="h-8 w-8" />
-          </a>
-        ))}
+  return (
+    <footer className="mt-auto w-full border-t border-gray-200 bg-gray-50 py-10">
+      <div className="container mx-auto flex flex-col items-center justify-between px-6 md:flex-row">
+        <p className="mb-4 text-center text-sm text-gray-600 md:mb-0 md:text-left">
+          {storeSettings.footer_copyright}
+        </p>
+        <div className="flex items-center gap-6">
+          {socialLinks.map(({ href, img, alt }) => (
+            <a key={alt} href={href} target="_blank" rel="noopener noreferrer" aria-label={alt} className="transition-transform hover:scale-110">
+              <Image src={img} alt={alt} width={32} height={32} className="h-8 w-8" />
+            </a>
+          ))}
+        </div>
       </div>
-    </div>
-  </footer>
-);
+    </footer>
+  );
+};
 
 // =========================================================
 // NAVBAR
 // =========================================================
 
 export default function Navbar() {
+  const storeSettings = useStoreSettings();
   const [auth, setAuth] = useState({ isLoggedIn: false, canAccessDashboard: false });
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
@@ -145,8 +151,8 @@ export default function Navbar() {
         {/* TENGAH: LOGO */}
         <div className="absolute left-1/2 top-1/2 z-30 flex -translate-x-1/2 -translate-y-1/2 items-center justify-center">
           <Link href="/" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-2 transition-transform hover:scale-105 active:scale-95">
-            <Image src="/logo.png" alt="Logo DapoerDjawa" width={40} height={40} priority className="h-9 w-auto md:h-11 drop-shadow-sm" />
-            <span className="hidden whitespace-nowrap text-xl font-extrabold tracking-tight text-gray-900 sm:block md:text-2xl">DapoerDjawa</span>
+            <Image src={storeSettings.store_logo_url || "/logo.png"} alt={`Logo ${storeSettings.store_name}`} width={40} height={40} priority className="h-9 w-auto md:h-11 drop-shadow-sm" />
+            <span className="hidden whitespace-nowrap text-xl font-extrabold tracking-tight text-gray-900 sm:block md:text-2xl">{storeSettings.store_name}</span>
           </Link>
         </div>
 

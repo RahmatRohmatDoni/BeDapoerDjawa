@@ -6,7 +6,6 @@ import ProductGrid, { Product } from "./ProductGrid";
 import { Footer } from "../layout/Navbar";
 import { supabase } from "@/lib/supabase";
 import { useQuery } from "@tanstack/react-query";
-import { useStoreSettings } from "@/lib/store-settings-context";
 
 type Produk = { id: string; nama_produk: string; created_at?: string };
 type ProdukVarian = { id: string; produk_id: string; price: number; img: string | null };
@@ -47,11 +46,10 @@ async function fetchMainPageData(): Promise<MainPageData> {
 }
 
 export default function MainPageClient() {
-  const storeSettings = useStoreSettings();
   const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ["mainPageData"],
     queryFn: fetchMainPageData,
-    staleTime: 300000, // 5 menit
+    staleTime: 300000,
     refetchOnWindowFocus: false,
     retry: 2,
   });
@@ -74,17 +72,16 @@ export default function MainPageClient() {
 
   const { banners = [], products = [] } = data || {};
 
-  // Static JSON-LD untuk SEO, dipisah agar JSX lebih bersih
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "Bakery",
-    name: storeSettings.store_name,
-    image: `${storeSettings.store_domain}${storeSettings.store_logo_url || "/logo.png"}`,
-    "@id": storeSettings.store_domain,
-    url: storeSettings.store_domain,
-    telephone: storeSettings.contact_phone,
-    address: { "@type": "PostalAddress", streetAddress: storeSettings.contact_address, addressCountry: "ID" },
-    description: storeSettings.store_description,
+    name: "DapoerDjawa",
+    image: "https://dapoerdjawa.com/logo.png",
+    "@id": "https://dapoerdjawa.com",
+    url: "https://dapoerdjawa.com",
+    telephone: "+628111222333",
+    address: { "@type": "PostalAddress", streetAddress: "Perum BDS 2", addressLocality: "Balikpapan", addressRegion: "Kalimantan Timur", addressCountry: "ID" },
+    description: "UMKM rumahan yang menyajikan kue kering premium di Balikpapan.",
     priceRange: "$$",
   };
 
@@ -101,19 +98,12 @@ export default function MainPageClient() {
       <section id="about" className="bg-white py-12 border-t border-gray-200 scroll-mt-20">
         <div className="container mx-auto px-5 max-w-4xl text-center md:text-left">
           <h2 className="uppercase font-bold text-gray-900 text-xl mb-4">About Us</h2>
-          {storeSettings.about_text ? (
-            <div className="space-y-4">
-              {storeSettings.about_text.split('\n').map((paragraph, index) => (
-                <p key={index} className="text-gray-600 text-base leading-relaxed text-justify">
-                  {paragraph}
-                </p>
-              ))}
-            </div>
-          ) : (
-            <p className="text-gray-600 text-base leading-relaxed mb-4 text-justify">
-              Dapoer Djawa adalah UMKM rumahan yang bermula di Perum BDS 2, Balikpapan, pada awal 2020. Tanpa pabrik atau mesin canggih, operasional kami jalankan dengan ketekunan dalam menimbang, menguleni, dan memanggang adonan secara manual setiap hari.
-            </p>
-          )}
+          <p className="text-gray-600 text-base leading-relaxed mb-4 text-justify">
+            Dapoer Djawa adalah UMKM rumahan yang bermula di Perum BDS 2, Balikpapan, pada awal 2020. Tanpa pabrik atau mesin canggih, operasional kami jalankan dengan ketekunan dalam menimbang, menguleni, dan memanggang adonan secara manual setiap hari.
+          </p>
+          <p className="text-gray-600 text-base leading-relaxed text-justify">
+            Kini, pesanan telah meluas menjangkau lebih banyak pelanggan secara online. Pertumbuhan ini mendorong kami untuk terus bertransformasi menjadi lebih profesional dalam melayani Anda.
+          </p>
         </div>
       </section>
       <Footer />

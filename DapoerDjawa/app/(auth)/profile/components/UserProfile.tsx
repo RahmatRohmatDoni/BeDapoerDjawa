@@ -9,7 +9,6 @@ import type { User as SupabaseUser } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
 import { toast } from "@/components/ui/toast";
 import { Button } from "@/components/ui/button";
-import { useStoreSettings } from "@/lib/store-settings-context";
 
 type UserData = {
   name: string;
@@ -20,7 +19,6 @@ type UserData = {
 
 export default function UserProfile() {
   const router = useRouter();
-  const storeSettings = useStoreSettings();
   const [userData, setUserData] = useState<UserData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -38,7 +36,7 @@ export default function UserProfile() {
         .maybeSingle();
 
       setUserData({
-        name: data?.nama_user || user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split("@")[0] || `Pengguna ${storeSettings.store_name}`,
+        name: data?.nama_user || user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split("@")[0] || "Pengguna DapoerDjawa",
         email: user.email,
         role: data?.role || "user", // Role utama diverifikasi dan diambil dari database
         photoURL: user.user_metadata?.avatar_url || user.user_metadata?.picture,
@@ -48,7 +46,7 @@ export default function UserProfile() {
     } finally {
       setIsLoading(false);
     }
-  }, [storeSettings.store_name]);
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -152,7 +150,7 @@ export default function UserProfile() {
           </div>
         )}
         <h1 className="text-2xl font-extrabold tracking-tight text-gray-900">Profil Akun Anda</h1>
-        <p className="mt-1 text-sm text-gray-500">{`Detail informasi akun ${storeSettings.store_name} aktif`}</p>
+        <p className="mt-1 text-sm text-gray-500">Detail informasi akun DapoerDjawa aktif</p>
       </div>
 
       <div className="mb-8 space-y-4 rounded-2xl border border-gray-100 bg-gray-50 p-5">

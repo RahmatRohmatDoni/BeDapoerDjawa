@@ -15,7 +15,6 @@ import {
 import toast, { Toaster } from "react-hot-toast";
 
 import { supabase } from "@/lib/supabase";
-import { useStoreSettings } from "@/lib/store-settings-context";
 
 // ============================================================
 // TYPE DATA
@@ -79,7 +78,6 @@ const getErrorMessage = (error: unknown): string => {
 // ============================================================
 
 export default function ProductsTab() {
-  const storeSettings = useStoreSettings();
 
   // ==========================================================
   // STATE DATA

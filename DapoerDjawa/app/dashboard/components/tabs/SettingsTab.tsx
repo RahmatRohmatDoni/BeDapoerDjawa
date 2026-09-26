@@ -38,6 +38,8 @@ import {
   Users,
   Loader2,
   X,
+  Store,
+  Save,
 } from "lucide-react";
 
 import { toast } from "sonner";
@@ -126,6 +128,10 @@ export default function SettingsTab() {
   const [promos, setPromos] = useState<PromoCode[]>([]);
   const [admins, setAdmins] = useState<AdminUser[]>([]);
   const [productList, setProductList] = useState<{ id: string; nama_produk: string }[]>([]);
+
+  // Store Settings (owner-only)
+  const [storeForm, setStoreForm] = useState<Record<string, string>>({});
+  const [isSavingStore, setIsSavingStore] = useState(false);
 
   // =========================================================
   // MODAL STATES
@@ -232,6 +238,17 @@ export default function SettingsTab() {
       if (resPromos.data) setPromos(resPromos.data);
       if (resAdmins.data) setAdmins(resAdmins.data);
       if (resProducts.data) setProductList(resProducts.data);
+
+      try {
+        const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+        const res = await fetch(`${API_URL}/settings/store`);
+        const data = await res.json();
+        if (data && typeof data === "object" && !data.error) {
+          setStoreForm(data);
+        }
+      } catch (e) {
+        console.error("Gagal mengambil store settings:", e);
+      }
     } catch (error) {
       console.error("Gagal mengambil data settings:", error);
     } finally {
@@ -248,6 +265,45 @@ export default function SettingsTab() {
       window.clearTimeout(timer);
     };
   }, [fetchData]);
+
+  // =========================================================
+  // SAVE STORE SETTINGS (owner-only)
+  // =========================================================
+
+  const saveStoreSettings = async () => {
+    setIsSavingStore(true);
+    try {
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        toast.error("Sesi login tidak ditemukan. Silakan login ulang.");
+        return;
+      }
+
+      const res = await fetch(`${API_URL}/settings/store/bulk`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify(storeForm),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        toast.error(data.message || "Gagal menyimpan pengaturan toko.");
+        return;
+      }
+
+      toast.success("Pengaturan toko berhasil disimpan!");
+    } catch (error) {
+      console.error("Error saving store settings:", error);
+      toast.error("Terjadi kesalahan saat menyimpan.");
+    } finally {
+      setIsSavingStore(false);
+    }
+  };
 
   // =========================================================
   // OPEN/CLOSE CONFIRM DIALOG
@@ -738,6 +794,120 @@ export default function SettingsTab() {
       </div>
 
       {/* =====================================================
+          0. PENGATURAN TOKO (owner-only)
+      ===================================================== */}
+      <Card className="border border-gray-100 shadow-sm rounded-2xl overflow-hidden bg-white">
+        <CardHeader className="bg-gray-50/50 border-b border-gray-100 pb-4">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center gap-2">
+              <Store className="w-5 h-5 text-amber-600" />
+              <CardTitle>Pengaturan Toko</CardTitle>
+            </div>
+            <Button
+              onClick={saveStoreSettings}
+              disabled={isSavingStore}
+              className="bg-amber-600 hover:bg-amber-700 text-white rounded-xl shadow-sm text-sm h-9"
+            >
+              {isSavingStore ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Save className="w-4 h-4 mr-1" />}
+              Simpan
+            </Button>
+          </div>
+          <CardDescription>
+            Ubah identitas toko, kontak, About Us, dan pengaturan SEO.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="p-6 space-y-6">
+
+          {/* Identitas Toko */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wider border-b pb-2">Identitas Toko</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 mb-1">Nama Toko</label>
+                <input type="text" value={storeForm.store_name || ""} onChange={(e) => setStoreForm((p) => ({ ...p, store_name: e.target.value }))} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none" />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 mb-1">Tagline</label>
+                <input type="text" value={storeForm.store_tagline || ""} onChange={(e) => setStoreForm((p) => ({ ...p, store_tagline: e.target.value }))} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none" placeholder="Toko Kue Kering Premium Balikpapan" />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 mb-1">URL Logo (path)</label>
+                <input type="text" value={storeForm.store_logo_url || ""} onChange={(e) => setStoreForm((p) => ({ ...p, store_logo_url: e.target.value }))} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none" placeholder="/logo.png" />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 mb-1">Domain Website</label>
+                <input type="text" value={storeForm.store_domain || ""} onChange={(e) => setStoreForm((p) => ({ ...p, store_domain: e.target.value }))} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none" placeholder="https://dapoerdjawa.com" />
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-gray-500 mb-1">Deskripsi Toko (untuk SEO)</label>
+              <textarea rows={2} value={storeForm.store_description || ""} onChange={(e) => setStoreForm((p) => ({ ...p, store_description: e.target.value }))} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none resize-none" />
+            </div>
+          </div>
+
+          {/* Kontak */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wider border-b pb-2">Kontak & Sosial Media</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 mb-1">WhatsApp (tanpa +)</label>
+                <input type="text" value={storeForm.contact_whatsapp || ""} onChange={(e) => setStoreForm((p) => ({ ...p, contact_whatsapp: e.target.value }))} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none" placeholder="62895383270632" />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 mb-1">Telepon</label>
+                <input type="text" value={storeForm.contact_phone || ""} onChange={(e) => setStoreForm((p) => ({ ...p, contact_phone: e.target.value }))} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none" placeholder="+628111222333" />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 mb-1">Instagram URL</label>
+                <input type="text" value={storeForm.contact_instagram || ""} onChange={(e) => setStoreForm((p) => ({ ...p, contact_instagram: e.target.value }))} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none" placeholder="https://instagram.com/..." />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 mb-1">TikTok URL</label>
+                <input type="text" value={storeForm.contact_tiktok || ""} onChange={(e) => setStoreForm((p) => ({ ...p, contact_tiktok: e.target.value }))} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none" placeholder="https://tiktok.com/@..." />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 mb-1">Email</label>
+                <input type="text" value={storeForm.contact_email || ""} onChange={(e) => setStoreForm((p) => ({ ...p, contact_email: e.target.value }))} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none" placeholder="admin@dapoerdjawa.com" />
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-gray-500 mb-1">Alamat Lengkap</label>
+              <textarea rows={2} value={storeForm.contact_address || ""} onChange={(e) => setStoreForm((p) => ({ ...p, contact_address: e.target.value }))} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none resize-none" />
+            </div>
+          </div>
+
+          {/* About Us */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wider border-b pb-2">About Us</h3>
+            <div>
+              <label className="block text-xs font-semibold text-gray-500 mb-1">Teks About Us (gunakan Enter untuk paragraf baru)</label>
+              <textarea rows={5} value={storeForm.about_text || ""} onChange={(e) => setStoreForm((p) => ({ ...p, about_text: e.target.value }))} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none resize-none" placeholder="Ceritakan tentang toko Anda..." />
+            </div>
+          </div>
+
+          {/* SEO & Footer */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wider border-b pb-2">SEO & Footer</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 mb-1">SEO Title</label>
+                <input type="text" value={storeForm.seo_title || ""} onChange={(e) => setStoreForm((p) => ({ ...p, seo_title: e.target.value }))} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none" />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 mb-1">SEO Keywords (pisahkan dengan koma)</label>
+                <input type="text" value={storeForm.seo_keywords || ""} onChange={(e) => setStoreForm((p) => ({ ...p, seo_keywords: e.target.value }))} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none" placeholder="kue kering, balikpapan, ..." />
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-gray-500 mb-1">Footer Copyright</label>
+              <input type="text" value={storeForm.footer_copyright || ""} onChange={(e) => setStoreForm((p) => ({ ...p, footer_copyright: e.target.value }))} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none" placeholder="© 2026 NamaToko. All rights reserved." />
+            </div>
+          </div>
+
+        </CardContent>
+      </Card>
+
+      {/* =====================================================
           1. HERO BANNER
       ===================================================== */}
       <Card className="border border-gray-100 shadow-sm rounded-2xl overflow-hidden bg-white">
@@ -1087,20 +1257,9 @@ export default function SettingsTab() {
                     Link Tujuan (Klik Banner Menuju)
                   </label>
                   <select
-                    value={
-                      bannerForm.link_url.startsWith("/product/")
-                        ? bannerForm.link_url
-                        : bannerForm.link_url
-                        ? "__custom__"
-                        : ""
-                    }
+                    value={bannerForm.link_url}
                     onChange={(e) => {
-                      const val = e.target.value;
-                      if (val === "__custom__") {
-                        setBannerForm({ ...bannerForm, link_url: "" });
-                      } else {
-                        setBannerForm({ ...bannerForm, link_url: val });
-                      }
+                      setBannerForm({ ...bannerForm, link_url: e.target.value });
                     }}
                     className="w-full mt-1 p-2.5 border rounded-xl text-sm"
                   >
@@ -1110,19 +1269,7 @@ export default function SettingsTab() {
                         🛒 {p.nama_produk}
                       </option>
                     ))}
-                    <option value="__custom__">✏️ Custom URL (tulis sendiri)</option>
                   </select>
-                  {(bannerForm.link_url && !bannerForm.link_url.startsWith("/product/")) && (
-                    <input
-                      type="text"
-                      value={bannerForm.link_url}
-                      onChange={(e) =>
-                        setBannerForm({ ...bannerForm, link_url: e.target.value })
-                      }
-                      className="w-full mt-2 p-2.5 border rounded-xl text-sm"
-                      placeholder="Contoh: /products atau https://..."
-                    />
-                  )}
                   {bannerForm.link_url && (
                     <p className="mt-1 text-[11px] text-gray-500">
                       Link: <code className="bg-gray-100 px-1 rounded">{bannerForm.link_url}</code>
